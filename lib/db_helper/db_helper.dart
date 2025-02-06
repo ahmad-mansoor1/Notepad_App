@@ -1,6 +1,7 @@
 
 import 'dart:io' as io;
-import 'package:my_notepad/model.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:my_notepad/model/model.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
@@ -31,7 +32,7 @@ class DBHelper{
 
   _onCreate(Database db, int version) async {
     
-    await db.execute('CREATE TABLE notes(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, description TEXT NOT NULL)');
+    await db.execute('CREATE TABLE notes(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, description TEXT NOT NULL, createdTime TEXT NOT NULL)');
     
   }
 
@@ -54,10 +55,27 @@ class DBHelper{
   }
 
 
-  Future<int> delete(int id) async{
+  Future<void> delete(int id) async{
     var dbClient = await db;
 
-    return dbClient!.delete("notes", where: 'id =?', whereArgs: [id]);
+    // return dbClient!.delete("notes", where: 'id =?', whereArgs: [id]);
+    // final db = await database;
+
+    // Delete the note
+    await dbClient!.delete('notes', where: 'id = ?', whereArgs: [id]);
+
+    // Reset IDs to keep them sequential
+    await dbClient.execute('''
+    CREATE TEMP TABLE temp_notes AS SELECT * FROM notes;
+  ''');
+    await dbClient.execute('DELETE FROM notes');
+    await dbClient.execute('''
+    INSERT INTO notes (id, title, description, createdTime)
+    SELECT row_number() OVER () AS id, title, description, createdTime FROM temp_notes;
+  ''');
+    await dbClient.execute('DROP TABLE temp_notes');
+
+
 
   }
 
