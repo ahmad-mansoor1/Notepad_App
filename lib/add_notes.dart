@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:my_notepad/constant.dart';
@@ -54,33 +55,33 @@ class _AddNotesState extends State<AddNotes> {
 
                       TextFormField(
                         controller: titleController,
-                      validator: (value){
+                        validator: (value){
                           if(value == null || value.isEmpty){
                             return 'Please Enter Title';
                           }
                           return null;
 
-                      },
+                        },
 
-                      maxLines: 1,
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
-                      decoration: InputDecoration(
-                        hintText: 'Enter a Title',
-                        hintStyle: TextStyle(color: Colors.grey),
-                        focusedBorder: OutlineInputBorder(
+                        maxLines: 1,
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+                        decoration: InputDecoration(
+                          hintText: 'Enter a Title',
+                          hintStyle: TextStyle(color: Colors.grey),
+                          focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: BorderSide(color: Colors.blueGrey)
+                          ),
+                          enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
-                            borderSide: BorderSide(color: Colors.blueGrey)
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: BorderSide(color: backgroundColor, width: 0.5),
-                        ),
+                            borderSide: BorderSide(color: backgroundColor, width: 0.5),
+                          ),
                           fillColor: Colors.grey[300],
                           filled: true,
 
 
+                        ),
                       ),
-                                          ),
                       SizedBox(height: 10),
                       Container(
                         constraints: BoxConstraints(minHeight: 250),
@@ -98,14 +99,14 @@ class _AddNotesState extends State<AddNotes> {
                           maxLines: 22,
                           decoration: InputDecoration(
                             focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: BorderSide(color: Colors.blueGrey)
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: BorderSide(color: Colors.blueGrey)
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(10),
                               borderSide: BorderSide(color: backgroundColor, width: 0.5),
                             ),
-                              hintText: 'Description',
+                            hintText: 'Description',
                             hintStyle: TextStyle(color: Colors.grey),
                             fillColor: Colors.grey[300],
                             filled: true,
@@ -124,33 +125,33 @@ class _AddNotesState extends State<AddNotes> {
                 width: 200,
                 child: ElevatedButton(
 
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: backgroundColor,
-                    foregroundColor: Colors.white,
-                    shadowColor: Colors.blueGrey
-                  ),
+                    style: ElevatedButton.styleFrom(
+                        backgroundColor: backgroundColor,
+                        foregroundColor: Colors.white,
+                        shadowColor: Colors.blueGrey
+                    ),
                     onPressed: (){
 
-                    if(_formKey.currentState!.validate()) {
-                      String formattedDate = DateFormat('dd MMM yyyy, hh:mm a').format(DateTime.now());
-                      dbHelper!.insert(NotesModel(
-                        title: titleController.text.toString(),
-                        description: descriptionController.text.toString(),
-                        createdTime: formattedDate,
-                    )).then((value){
+                      if(_formKey.currentState!.validate()) {
+                        String formattedDate = DateFormat('dd MMM yyyy, hh:mm a').format(DateTime.now());
+                        dbHelper!.insert(NotesModel(
+                          title: titleController.text.toString(),
+                          description: descriptionController.text.toString(),
+                          createdTime: formattedDate,
+                        )).then((value){
 
-                      setState(() {
+                          setState(() {
 
-                        notesList = dbHelper!.getNotesModelList();
-                        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context)=>NotesScreen()));
-                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Notes Added'), backgroundColor: Colors.green,));
-                      });
+                            notesList = dbHelper!.getNotesModelList();
+                            Navigator.pushReplacement(context, MaterialPageRoute(builder: (context)=>NotesScreen()));
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Notes Added'), backgroundColor: Colors.green,));
+                          });
 
-                    }).onError((error, stackTrace) {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error'), backgroundColor: Colors.red,));
+                        }).onError((error, stackTrace) {
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error'), backgroundColor: Colors.red,));
 
-                    });
-                    }
+                        });
+                      }
 
                     },
                     child: Text('Save')

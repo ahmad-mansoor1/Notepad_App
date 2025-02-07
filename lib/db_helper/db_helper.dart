@@ -19,6 +19,7 @@ class DBHelper{
     _db = await initDatabase();
     return _db;
 
+
   }
 
   initDatabase() async{
@@ -55,6 +56,8 @@ class DBHelper{
   }
 
 
+
+
   Future<void> delete(int id) async{
     var dbClient = await db;
 
@@ -76,7 +79,6 @@ class DBHelper{
     await dbClient.execute('DROP TABLE temp_notes');
 
 
-
   }
 
 
@@ -88,11 +90,10 @@ class DBHelper{
 
   }
 
-
-
-
-
-
+  Future<void> deleteAllNotes() async {
+    var dbClient = await db;
+    await dbClient!.delete('notes'); // Deletes all rows from the 'notes' table
+  }
 
 
 }
