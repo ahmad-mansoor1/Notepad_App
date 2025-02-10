@@ -1,6 +1,6 @@
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:my_notepad/constant.dart';
 import 'package:my_notepad/db_helper/db_helper.dart';
 import 'package:my_notepad/model/model.dart';
@@ -130,27 +130,42 @@ class _AddNotesState extends State<AddNotes> {
                         foregroundColor: Colors.white,
                         shadowColor: Colors.blueGrey
                     ),
-                    onPressed: (){
+                    onPressed: () async {
 
                       if(_formKey.currentState!.validate()) {
-                        String formattedDate = DateFormat('dd MMM yyyy, hh:mm a').format(DateTime.now());
-                        dbHelper!.insert(NotesModel(
-                          title: titleController.text.toString(),
-                          description: descriptionController.text.toString(),
+                        String formattedDate = DateTime.now().toIso8601String();
+
+
+                        // Create a note object
+                        NotesModel newNote = NotesModel(
+                          title: titleController.text,
+                          description: descriptionController.text,
                           createdTime: formattedDate,
-                        )).then((value){
+                        );
 
-                          setState(() {
 
-                            notesList = dbHelper!.getNotesModelList();
-                            Navigator.pushReplacement(context, MaterialPageRoute(builder: (context)=>NotesScreen()));
-                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Notes Added'), backgroundColor: Colors.green,));
+                        setState(() {
+                          // Save to Local Database
+                           dbHelper!.insert(newNote);
+
+                          // Save to Firebase
+                           FirebaseFirestore.instance.collection('notes').add({
+                          'title': newNote.title,
+                          'description': newNote.description,
+                          'createdTime': newNote.createdTime,
                           });
-
-                        }).onError((error, stackTrace) {
-                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error'), backgroundColor: Colors.red,));
-
                         });
+
+
+                      // Navigate back to NotesScreen
+                      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => NotesScreen()));
+
+                      // Show success message
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: Text('Note Saved Successfully'),
+                      backgroundColor: Colors.green,
+                      ));
+
                       }
 
                     },
