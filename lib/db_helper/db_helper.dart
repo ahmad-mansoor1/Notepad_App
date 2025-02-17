@@ -1,6 +1,5 @@
 
 import 'dart:io' as io;
-import 'package:flutter/cupertino.dart';
 import 'package:my_notepad/model/model.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
@@ -33,17 +32,17 @@ class DBHelper{
 
   _onCreate(Database db, int version) async {
     
-    await db.execute('CREATE TABLE notes(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, description TEXT NOT NULL, createdTime TEXT NOT NULL)');
+    await db.execute('CREATE TABLE notes(id TEXT PRIMARY KEY, title TEXT NOT NULL, description TEXT NOT NULL, createdTime INTEGER)');
     
   }
 
 
-  Future<NotesModel> insert(NotesModel notesModel) async{
+  Future<int> insert(NotesModel notesModel) async{
 
     var dbClient = await db;
-    await dbClient!.insert("notes", notesModel.toMap());
+    return dbClient!.insert("notes", notesModel.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace);
 
-    return notesModel;
   }
 
 
@@ -56,28 +55,22 @@ class DBHelper{
   }
 
 
-
-
-  Future<void> delete(int id) async{
+  Future<void> delete(String id) async{
     var dbClient = await db;
-
-    // return dbClient!.delete("notes", where: 'id =?', whereArgs: [id]);
-    // final db = await database;
 
     // Delete the note
     await dbClient!.delete('notes', where: 'id = ?', whereArgs: [id]);
 
-    // Reset IDs to keep them sequential
-    await dbClient.execute('''
-    CREATE TEMP TABLE temp_notes AS SELECT * FROM notes;
-  ''');
-    await dbClient.execute('DELETE FROM notes');
-    await dbClient.execute('''
-    INSERT INTO notes (id, title, description, createdTime)
-    SELECT row_number() OVER () AS id, title, description, createdTime FROM temp_notes;
-  ''');
-    await dbClient.execute('DROP TABLE temp_notes');
-
+  //   // Reset IDs to keep them sequential
+  //   await dbClient.execute('''
+  //   CREATE TEMP TABLE temp_notes AS SELECT * FROM notes;
+  // ''');
+  //   await dbClient.execute('DELETE FROM notes');
+  //   await dbClient.execute('''
+  //   INSERT INTO notes (id, title, description, createdTime)
+  //   SELECT row_number() OVER () AS id, title, description, createdTime FROM temp_notes;
+  // ''');
+  //   await dbClient.execute('DROP TABLE temp_notes');
 
   }
 

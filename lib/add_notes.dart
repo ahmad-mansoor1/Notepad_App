@@ -1,4 +1,3 @@
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:my_notepad/constant.dart';
@@ -14,7 +13,6 @@ class AddNotes extends StatefulWidget {
 }
 
 class _AddNotesState extends State<AddNotes> {
-
   final _formKey = GlobalKey<FormState>();
 
   DBHelper? dbHelper;
@@ -25,8 +23,6 @@ class _AddNotesState extends State<AddNotes> {
     dbHelper = DBHelper();
     super.initState();
   }
-
-
 
   TextEditingController titleController = TextEditingController();
   TextEditingController descriptionController = TextEditingController();
@@ -39,8 +35,6 @@ class _AddNotesState extends State<AddNotes> {
         foregroundColor: Colors.white,
         title: Text('Add Note'),
       ),
-
-
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 10),
@@ -52,56 +46,43 @@ class _AddNotesState extends State<AddNotes> {
                   key: _formKey,
                   child: Column(
                     children: [
-
                       TextFormField(
                         controller: titleController,
-                        validator: (value){
-                          if(value == null || value.isEmpty){
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
                             return 'Please Enter Title';
                           }
                           return null;
-
                         },
-
                         maxLines: 1,
                         style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
                         decoration: InputDecoration(
                           hintText: 'Enter a Title',
                           hintStyle: TextStyle(color: Colors.grey),
-                          focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: BorderSide(color: Colors.blueGrey)
-                          ),
+                          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.blueGrey)),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
                             borderSide: BorderSide(color: backgroundColor, width: 0.5),
                           ),
                           fillColor: Colors.grey[300],
                           filled: true,
-
-
                         ),
                       ),
                       SizedBox(height: 10),
                       Container(
                         constraints: BoxConstraints(minHeight: 250),
                         child: TextFormField(
-
                           controller: descriptionController,
-
-                          validator: (value){
-                            if(value == null || value.isEmpty){
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
                               return 'Please Enter Some Description';
                             }
                             return null;
-
                           },
                           maxLines: 22,
                           decoration: InputDecoration(
-                            focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10),
-                                borderSide: BorderSide(color: Colors.blueGrey)
-                            ),
+                            focusedBorder:
+                                OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.blueGrey)),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(10),
                               borderSide: BorderSide(color: backgroundColor, width: 0.5),
@@ -113,31 +94,24 @@ class _AddNotesState extends State<AddNotes> {
                           ),
                         ),
                       ),
-
                     ],
                   ),
                 ),
               ),
-
               SizedBox(height: 30),
               SizedBox(
-
                 width: 200,
                 child: ElevatedButton(
-
-                    style: ElevatedButton.styleFrom(
-                        backgroundColor: backgroundColor,
-                        foregroundColor: Colors.white,
-                        shadowColor: Colors.blueGrey
-                    ),
+                    style: ElevatedButton.styleFrom(backgroundColor: backgroundColor, foregroundColor: Colors.white, shadowColor: Colors.blueGrey),
                     onPressed: () async {
+                      if (_formKey.currentState!.validate()) {
+                        int formattedDate = DateTime.now().millisecondsSinceEpoch;
 
-                      if(_formKey.currentState!.validate()) {
-                        String formattedDate = DateTime.now().toIso8601String();
-
-
+                        // Generate a unique ID
+                        String noteId = FirebaseFirestore.instance.collection('notes').doc().id;
                         // Create a note object
                         NotesModel newNote = NotesModel(
+                          id: noteId,
                           title: titleController.text,
                           description: descriptionController.text,
                           createdTime: formattedDate,
@@ -149,28 +123,25 @@ class _AddNotesState extends State<AddNotes> {
                            dbHelper!.insert(newNote);
 
                           // Save to Firebase
-                           FirebaseFirestore.instance.collection('notes').add({
+                           FirebaseFirestore.instance.collection('notes').doc(noteId).set({
                           'title': newNote.title,
                           'description': newNote.description,
                           'createdTime': newNote.createdTime,
                           });
                         });
 
+                        // Navigate back to NotesScreen
+                        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => NotesScreen()));
 
-                      // Navigate back to NotesScreen
-                      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => NotesScreen()));
-
-                      // Show success message
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                      content: Text('Note Saved Successfully'),
-                      backgroundColor: Colors.green,
-                      ));
-
+                        // Show success message
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                          content: Text('Note Saved Successfully'),
+                          backgroundColor: Colors.green,
+                        ));
                       }
 
                     },
-                    child: Text('Save')
-                ),
+                    child: Text('Save')),
               ),
             ],
           ),

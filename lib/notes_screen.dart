@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:my_notepad/add_notes.dart';
@@ -29,8 +30,10 @@ class _NotesScreenState extends State<NotesScreen> {
     List<NotesModel> localNotes = await dbHelper!.getNotesModelList();
 
     if (localNotes.isEmpty) {
-      print("Local DB is empty. Fetching from Firebase...");
-      await syncFirestoreToLocalDB();
+      if (kDebugMode) {
+        print("Local DB is empty. Fetching from Firebase...");
+      }
+      await syncFireStoreToLocalDB();
     }
 
     setState(() {
@@ -38,29 +41,31 @@ class _NotesScreenState extends State<NotesScreen> {
     });
   }
 
-  Future<void> syncFirestoreToLocalDB() async {
+  Future<void> syncFireStoreToLocalDB() async {
     QuerySnapshot snapshot = await FirebaseFirestore.instance.collection('notes').get();
 
     for (var doc in snapshot.docs) {
       NotesModel note = NotesModel(
+        id: doc.id,
         title: doc['title'],
         description: doc['description'],
-        createdTime: doc['createdTime'],
+        createdTime:
+            (doc['createdTime'] is Timestamp) ? doc['createdTime'].millisecondsSinceEpoch : DateTime.parse(doc['createdTime']).millisecondsSinceEpoch,
       );
 
-      await dbHelper!.insert(note);  // Store into SQLite
+      await dbHelper!.insert(note); // Store into SQLite
     }
 
-    print("FireStore data synced to local DB.");
+    if (kDebugMode) {
+      print("FireStore data synced to local DB.");
+    }
   }
-
 
   @override
   void initState() {
     super.initState();
     dbHelper = DBHelper();
     getData();
-
   }
 
   Future<bool> _onWillPop() async {
@@ -107,7 +112,17 @@ class _NotesScreenState extends State<NotesScreen> {
         false;
   }
 
+  Future<void> deleteAllNotesFromFirebase() async {
+    WriteBatch batch = FirebaseFirestore.instance.batch();
 
+    QuerySnapshot snapshot = await FirebaseFirestore.instance.collection('notes').get();
+
+    for (QueryDocumentSnapshot doc in snapshot.docs) {
+      batch.delete(doc.reference);
+    }
+
+    await batch.commit(); // Commit the batch delete operation
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -136,13 +151,8 @@ class _NotesScreenState extends State<NotesScreen> {
                     onPressed: () async {
                       bool shouldDelete = await _showDeleteAllDialog();
                       if (shouldDelete) {
-
                         // Delete all notes from Firebase FireStore
-                        await FirebaseFirestore.instance.collection('notes').get().then((querySnapshot) {
-                          for (var doc in querySnapshot.docs) {
-                            doc.reference.delete();
-                          }
-                        });
+                        await deleteAllNotesFromFirebase();
 
                         await dbHelper!.deleteAllNotes(); // Call the deleteAll method
                         setState(() {
@@ -173,12 +183,12 @@ class _NotesScreenState extends State<NotesScreen> {
                       hintStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.white54),
                       border: InputBorder.none),
                   onChanged: (String value) {
-                    search = value.toString();
-                    setState(() {});
+                    setState(() {
+                      search = value.toLowerCase().trim();
+                    });
                   },
                 ),
               ),
-
         body: FutureBuilder<List<NotesModel>>(
           future: notesList,
           builder: (context, AsyncSnapshot<List<NotesModel>> snapshot) {
@@ -197,10 +207,15 @@ class _NotesScreenState extends State<NotesScreen> {
                   itemCount: snapshot.data!.length,
                   itemBuilder: (context, int index) {
                     String noteId = snapshot.data![index].id.toString();
-                    String noteTitle = snapshot.data![index].title.toLowerCase();
-                    String searchQuery = searchController.text.toLowerCase();
+                    String noteTitle = snapshot.data![index].title.toLowerCase().trim();
+                    String noteDescription = snapshot.data![index].description.toLowerCase().trim();
+                    String searchQuery = searchController.text.toLowerCase().trim();
 
-                    if (searchController.text.isEmpty || noteTitle.contains(searchQuery) || noteId.contains(searchQuery)) {
+                    // Proper filtering logic
+                    bool matchesSearch = searchQuery.isEmpty || noteTitle.contains(searchQuery) ||
+                        noteDescription.contains(searchQuery) || noteId.contains(searchQuery);
+
+                    if (matchesSearch) {
                       return Dismissible(
                           direction: DismissDirection.endToStart,
                           key: ValueKey(snapshot.data![index].id),
@@ -209,25 +224,21 @@ class _NotesScreenState extends State<NotesScreen> {
                             child: Icon(Icons.delete_forever),
                           ),
                           onDismissed: (DismissDirection direction) async {
+                            // Delete from SQLite
+                            await dbHelper!.delete(snapshot.data![index].id);
 
-                            await dbHelper!.delete(snapshot.data![index].id!);
-
-
-                            await FirebaseFirestore.instance.collection('notes').where('createdTime', isEqualTo: snapshot.data![index].createdTime).get()
-                                .then((querySnapshot) {
-                              for (var doc in querySnapshot.docs) {
-                                doc.reference.delete();
-                              }
-                            });
+                            await FirebaseFirestore.instance.collection('notes').doc(snapshot.data![index].id).delete();
 
                             setState(() {
                               notesList = dbHelper!.getNotesModelList();
-
                             });
                           },
                           child: InkWell(
                             onTap: () {
-                              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => EditScreen(
+                              Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (context) => EditScreen(
                                           id: snapshot.data![index].id,
                                           title: snapshot.data![index].title.toString(),
                                           description: snapshot.data![index].description.toString())));
@@ -268,8 +279,8 @@ class _NotesScreenState extends State<NotesScreen> {
                                     crossAxisAlignment: CrossAxisAlignment.end,
                                     children: [
                                       Text(
-                                        DateFormat('dd MMM yyyy, hh:mm a').format(DateTime.parse(snapshot.data![index].createdTime)),
-                                        // Display time
+                                        DateFormat('dd MMM yyyy, hh:mm a')
+                                            .format(DateTime.fromMillisecondsSinceEpoch(snapshot.data![index].createdTime)), // Display time
                                         style: TextStyle(fontSize: 12, color: Colors.grey),
                                       ),
                                     ],

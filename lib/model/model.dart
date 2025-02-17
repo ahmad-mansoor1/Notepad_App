@@ -1,12 +1,12 @@
 
 class NotesModel{
 
-  final int? id;
+  final String id;
   final String title;
   final String description;
-  String createdTime; // Store timestamp as a string
+  int createdTime; // Store timestamp as a string
 
-  NotesModel({this.id ,required this.title, required this.description, required this.createdTime});
+  NotesModel({required this.id ,required this.title, required this.description, required this.createdTime});
 
 
 
